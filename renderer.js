@@ -968,6 +968,7 @@ function toggleOptions(show) {
     if (isProcessing) return;
     const modal = document.getElementById('options-modal');
     if (show) {
+        document.activeElement?.blur();
         modal.style.display = 'flex';
         modal.style.opacity = '1';
     } else {
@@ -981,6 +982,7 @@ async function toggleProfile(show) {
     const modal = document.getElementById('profile-modal');
     if (show) {
         await updatePlaytimeDisplay();
+        document.activeElement?.blur();
         modal.style.display = 'flex';
         modal.style.opacity = '1';
     } else {
@@ -994,6 +996,7 @@ async function toggleServers(show) {
     const modal = document.getElementById('servers-modal');
     if (show) {
         await loadServers();
+        document.activeElement?.blur();
         modal.style.display = 'flex';
         modal.style.opacity = '1';
     } else {
