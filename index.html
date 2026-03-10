@@ -42,7 +42,15 @@
         </div>
 
         <div class="content-area" style="flex-direction: row; align-items: stretch; padding: 0;">
-            
+
+            <!-- Classic Mode: Logo + Splash (only visible in classic theme) -->
+            <div class="classic-logo-area" id="classic-logo-area">
+                <div style="position: relative;">
+                    <img src="minecraftlogo.png" class="mc-logo-img" alt="Minecraft Logo" style="margin-bottom: 0; margin-top: 0;">
+                    <div id="classic-splash-text" class="splash-text">Splash!</div>
+                </div>
+            </div>
+
             <!-- Left Side: Main Menu -->
             <div class="menu-column" style="flex: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; z-index: 5;">
                 <div class="relative">
@@ -239,6 +247,13 @@
                 </label>
             </div>
 
+            <div class="mc-input-group">
+                <label class="mc-label" style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="classic-theme-checkbox" class="nav-item" style="width: 24px; height: 24px; margin-right: 12px; cursor: pointer;" tabindex="0">
+                    Use Classic Minecraft Launcher UI
+                </label>
+            </div>
+
             <div class="flex gap-4 w-full mt-4">
                 <div id="btn-options-done" class="btn-mc flex-grow nav-item" onclick="saveOptions()" tabindex="0">DONE</div>
                 <div id="btn-options-cancel" class="btn-mc flex-grow nav-item" onclick="toggleOptions(false)" tabindex="0">CANCEL</div>
@@ -326,6 +341,47 @@
 
             <div class="flex justify-center w-full mt-6">
                  <div id="btn-close-skin" class="btn-mc nav-item !mb-0" onclick="closeSkinManager()" tabindex="0">DONE</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Classic Launcher Bottom Bar (only shown when classic theme is active) -->
+    <div id="classic-bottom-bar" class="classic-bottom-bar">
+        <!-- Left: Profile Section -->
+        <div class="classic-profile-section">
+            <div class="classic-avatar" id="classic-avatar">S</div>
+            <div class="classic-profile-info">
+                <div class="classic-username-label">Logged in as</div>
+                <div class="classic-username-display" id="classic-username-display">Player</div>
+            </div>
+            <div class="classic-mini-btn" onclick="toggleProfile(true)" title="Edit Profile">Edit Profile</div>
+            <div class="classic-mini-btn" onclick="openSkinManager()" title="Change Skin">Skin</div>
+        </div>
+
+        <!-- Center: Play Button -->
+        <div class="classic-center-section">
+            <div class="btn-mc btn-play classic-play-btn nav-item" id="classic-btn-play" onclick="launchGame()" tabindex="0">PLAY</div>
+        </div>
+
+        <!-- Right: Version + Nav -->
+        <div class="classic-right-section">
+            <div class="classic-version-row">
+                <span class="version-label" style="font-size: 16px; white-space: nowrap;">Version:</span>
+                <div id="classic-version-select-box" class="version-select-box nav-item" tabindex="0" style="height: 40px; font-size: 16px; flex-grow: 1; padding-right: 51px;">
+                    <span id="classic-version-display">Loading...</span>
+                    <div class="select-arrow" style="width: 36px;">▼</div>
+                    <select id="classic-version-select" class="hidden-select" onchange="syncVersionFromClassic()">
+                        <option>Loading...</option>
+                    </select>
+                </div>
+                <div class="btn-mc btn-mini nav-item" onclick="checkForUpdatesManual()" title="Check for Updates" tabindex="0" style="width: 40px !important; height: 40px; max-width: 40px !important;">
+                    <img src="restart.png" alt="Update">
+                </div>
+            </div>
+            <div class="classic-nav-links">
+                <span class="classic-link nav-item" onclick="toggleInstances(true)" tabindex="0">Instances</span>
+                <span class="classic-link nav-item" onclick="toggleServers(true)" tabindex="0">Servers</span>
+                <span class="classic-link nav-item" onclick="toggleOptions(true)" tabindex="0">Options</span>
             </div>
         </div>
     </div>

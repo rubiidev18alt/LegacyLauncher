@@ -233,6 +233,9 @@ body {
     line-height: 1.6;
     white-space: pre-wrap;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    overflow: hidden;
 }
 
 .pn-body li {
@@ -420,21 +423,30 @@ body {
     border: 2px solid #555;
     display: flex;
     align-items: center;
-    padding: 0 15px 6px 15px;
+    padding: 0 63px 6px 15px;
     color: white;
     font-size: 24px;
     cursor: pointer;
     position: relative;
     transition: border-color 0.2s;
+    overflow: hidden;
 }
 
 .version-select-box:hover {
     border-color: #fff;
 }
 
+#current-version-display,
+#classic-version-display {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+
 .select-arrow {
     width: 48px;
-    height: 52px;
     background: #6e6e6e;
     border-left: 2px solid #555;
     display: flex;
@@ -443,6 +455,8 @@ body {
     color: white;
     position: absolute;
     right: 0;
+    top: 0;
+    bottom: 0;
 }
 
 .progress-container {
@@ -723,4 +737,290 @@ select.hidden-select {
 
 ::-webkit-scrollbar-thumb:hover {
     background: #7e7e7e;
+}
+
+/* ============================================================
+   CLASSIC MINECRAFT LAUNCHER THEME
+   Applied when <body class="classic-theme"> is set
+   ============================================================ */
+
+/* --- Classic Bottom Bar (hidden by default) --- */
+.classic-bottom-bar {
+    display: none;
+    height: 82px;
+    min-height: 82px;
+    background: linear-gradient(to bottom, #1a1a1a 0%, #0d0d0d 100%);
+    border-top: 3px solid #000;
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.07);
+    align-items: center;
+    padding: 0 16px;
+    gap: 16px;
+    z-index: 200;
+    flex-shrink: 0;
+}
+
+/* Classic Logo Area (hidden by default, shown in classic mode) */
+.classic-logo-area {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding-top: 30px;
+    pointer-events: none;
+}
+
+/* ---- Show/hide elements in classic mode ---- */
+body.classic-theme .classic-bottom-bar {
+    display: flex;
+}
+
+body.classic-theme .classic-logo-area {
+    display: flex;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    z-index: 3;
+    justify-content: center;
+    padding-top: 18px;
+}
+
+body.classic-theme .classic-logo-area .mc-logo-img {
+    width: 480px;
+    margin-top: 0;
+    margin-bottom: 0;
+    filter: drop-shadow(4px 4px 12px rgba(0,0,0,0.9));
+}
+
+body.classic-theme .classic-logo-area .splash-text {
+    top: 60%;
+    left: 88%;
+    font-size: 17px;
+}
+
+/* ---- Classic mode layout restructure ---- */
+body.classic-theme {
+    flex-direction: column;
+}
+
+body.classic-theme .main-wrapper {
+    flex: 1;
+    min-height: 0;
+}
+
+/* Force sidebar to always be expanded in classic mode */
+body.classic-theme .sidebar {
+    width: 320px !important;
+    padding: 20px 18px !important;
+    background: rgba(0, 0, 0, 0.82) !important;
+    border-right: 3px solid #000 !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+body.classic-theme .sidebar.collapsed {
+    width: 320px !important;
+    padding: 20px 18px !important;
+}
+
+body.classic-theme .sidebar.collapsed #updates-list {
+    display: flex !important;
+}
+
+body.classic-theme .sidebar.collapsed .sidebar-title {
+    border-bottom: 2px solid #555 !important;
+    margin-bottom: 20px !important;
+    justify-content: space-between !important;
+    padding-bottom: 12px !important;
+}
+
+body.classic-theme .sidebar.collapsed #sidebar-title-text {
+    display: block !important;
+}
+
+body.classic-theme .sidebar.collapsed #sidebar-toggle-icon {
+    font-size: 24px !important;
+}
+
+body.classic-theme .sidebar-title {
+    font-size: 24px;
+    color: #aaa;
+    text-shadow: 1px 1px 0 #000;
+    letter-spacing: 2px;
+}
+
+body.classic-theme #sidebar-title-text::before {
+    content: "NEWS — ";
+    color: #55ff55;
+    font-size: 14px;
+    letter-spacing: 3px;
+}
+
+/* Hide center menu column in classic mode */
+body.classic-theme .menu-column {
+    display: none !important;
+}
+
+/* Hide skin column in classic mode */
+body.classic-theme .skin-column {
+    display: none !important;
+}
+
+/* Content area in classic: full panorama, no center column */
+body.classic-theme .content-area {
+    position: relative;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Keep progress bar visible in classic mode */
+body.classic-theme .progress-container {
+    z-index: 100;
+}
+
+/* ---- Classic Bottom Bar Layout ---- */
+.classic-profile-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 0 0 auto;
+    max-width: 380px;
+}
+
+.classic-avatar {
+    width: 48px;
+    height: 48px;
+    background: #4CAF50;
+    border: 3px solid #000;
+    box-shadow: inset -2px -2px 0 #2a6b2a, inset 2px 2px 0 #7ecf7e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: #fff;
+    font-family: 'Minecraft', monospace;
+    text-shadow: 2px 2px 0 #000;
+    flex-shrink: 0;
+    image-rendering: pixelated;
+}
+
+.classic-profile-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.classic-username-label {
+    font-size: 11px;
+    color: #666;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    text-transform: uppercase;
+}
+
+.classic-username-display {
+    font-size: 18px;
+    color: #eee;
+    text-shadow: 1px 1px 0 #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.classic-mini-btn {
+    background: #3a3a3a;
+    border: 2px solid #000;
+    color: #ccc;
+    font-size: 13px;
+    padding: 4px 10px 6px;
+    cursor: pointer;
+    font-family: 'Minecraft', monospace;
+    box-shadow: inset -2px -2px 0 #222, inset 2px 2px 0 #555;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.classic-mini-btn:hover {
+    background: #4a4a4a;
+    color: #fff;
+    outline: 1px solid #fff;
+}
+
+/* Center play section */
+.classic-center-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+}
+
+.classic-play-btn {
+    width: 260px !important;
+    height: 58px !important;
+    font-size: 30px !important;
+    margin-bottom: 0 !important;
+}
+
+/* Right section: version + nav links */
+.classic-right-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 6px;
+    flex: 0 0 auto;
+    max-width: 320px;
+}
+
+.classic-version-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.classic-nav-links {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.classic-link {
+    color: #888;
+    font-size: 14px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: color 0.15s;
+    padding: 2px 4px;
+}
+
+.classic-link:hover {
+    color: #fff;
+    text-shadow: 0 0 6px rgba(255,255,255,0.4);
+}
+
+.classic-link:focus {
+    color: #55ff55;
+    outline: none;
+}
+
+/* hide the toggle arrow and disable the click in classic mode */
+body.classic-theme #sidebar-toggle-icon {
+    display: none;
+}
+
+body.classic-theme .sidebar-title {
+    cursor: default;
+    pointer-events: none;
+}
+
+/* ---- Classic mode music button position ---- */
+body.classic-theme .music-btn {
+    bottom: 92px;
 }

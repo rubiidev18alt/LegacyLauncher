@@ -479,6 +479,7 @@ window.onload = async () => {
         });
 
         // Initialize features
+        await loadTheme();
         fetchGitHubData();
         checkForLauncherUpdates();
         loadSplashText();
@@ -684,45 +685,42 @@ async function checkIsInstalled(tag) {
 
 async function updatePlayButtonText() {
     const btn = document.getElementById('btn-play-main');
+    const classicBtn = document.getElementById('classic-btn-play');
     if (!btn || isProcessing) return;
 
+    let label, disabled, running;
+
     if (isGameRunning) {
-        btn.textContent = "GAME RUNNING";
-        btn.classList.add('running');
-        return;
+        label = "GAME RUNNING"; running = true; disabled = false;
     } else {
-        btn.classList.remove('running');
-    }
-
-    // Offline / No Data Case
-    if (releasesData.length === 0) {
-        const fullPath = await getInstalledPath();
-        if (currentInstance.installedTag && fs.existsSync(fullPath)) {
-            btn.textContent = "PLAY";
-            btn.classList.remove('disabled');
+        running = false;
+        if (releasesData.length === 0) {
+            const fullPath = await getInstalledPath();
+            if (currentInstance.installedTag && fs.existsSync(fullPath)) {
+                label = "PLAY"; disabled = false;
+            } else {
+                label = "OFFLINE"; disabled = true;
+            }
         } else {
-            btn.textContent = "OFFLINE";
-            btn.classList.add('disabled');
-        }
-        return;
-    }
-
-    const release = releasesData[currentReleaseIndex];
-    if (!release) {
-        btn.textContent = "PLAY";
-        return;
-    }
-
-    if (await checkIsInstalled(release.tag_name)) {
-        btn.textContent = "PLAY";
-    } else {
-        const fullPath = await getInstalledPath();
-        if (fs.existsSync(fullPath)) {
-            btn.textContent = "UPDATE";
-        } else {
-            btn.textContent = "INSTALL";
+            const release = releasesData[currentReleaseIndex];
+            if (!release) {
+                label = "PLAY"; disabled = false;
+            } else if (await checkIsInstalled(release.tag_name)) {
+                label = "PLAY"; disabled = false;
+            } else {
+                const fullPath = await getInstalledPath();
+                label = fs.existsSync(fullPath) ? "UPDATE" : "INSTALL";
+                disabled = false;
+            }
         }
     }
+
+    [btn, classicBtn].forEach(b => {
+        if (!b) return;
+        b.textContent = label;
+        b.classList.toggle('running', running);
+        if (disabled) b.classList.add('disabled'); else b.classList.remove('disabled');
+    });
 }
 
 function setGameRunning(running) {
@@ -850,6 +848,7 @@ function populateVersions() {
         if(index === 0 && display) display.textContent = opt.textContent;
     });
     currentReleaseIndex = 0;
+    syncClassicVersionSelect();
     updatePlayButtonText();
 }
 
@@ -885,6 +884,7 @@ function updateSelectedRelease() {
     if (!select) return;
     currentReleaseIndex = select.value;
     document.getElementById('current-version-display').textContent = select.options[select.selectedIndex].text;
+    syncClassicVersionSelect();
     updatePlayButtonText();
 }
 
@@ -1036,15 +1036,18 @@ async function launchLocalClient() {
 function setProcessingState(active) {
     isProcessing = active;
     const playBtn = document.getElementById('btn-play-main');
+    const classicPlayBtn = document.getElementById('classic-btn-play');
     const optionsBtn = document.getElementById('btn-options');
     const progressContainer = document.getElementById('progress-container');
     if (active) {
         if (playBtn) playBtn.classList.add('disabled');
+        if (classicPlayBtn) classicPlayBtn.classList.add('disabled');
         if (optionsBtn) optionsBtn.classList.add('disabled');
         if (progressContainer) progressContainer.style.display = 'flex';
         updateProgress(0, "Preparing...");
     } else {
         if (playBtn) playBtn.classList.remove('disabled');
+        if (classicPlayBtn) classicPlayBtn.classList.remove('disabled');
         if (optionsBtn) optionsBtn.classList.remove('disabled');
         if (progressContainer) progressContainer.style.display = 'none';
     }
@@ -1135,7 +1138,12 @@ function downloadFile(url, destPath) {
 function toggleOptions(show) {
     if (isProcessing) return;
     const modal = document.getElementById('options-modal');
-    if (show) { document.activeElement?.blur(); modal.style.display = 'flex'; modal.style.opacity = '1'; }
+    if (show) {
+        // Sync classic theme checkbox to current state
+        const cb = document.getElementById('classic-theme-checkbox');
+        if (cb) cb.checked = document.body.classList.contains('classic-theme');
+        document.activeElement?.blur(); modal.style.display = 'flex'; modal.style.opacity = '1';
+    }
     else { modal.style.opacity = '0'; setTimeout(() => modal.style.display = 'none', 300); }
 }
 
@@ -1246,6 +1254,9 @@ async function saveOptions() {
         currentInstance.compatLayer = compatSelect.value;
         currentInstance.customCompatPath = customProtonPath;
     }
+    const isClassic = document.getElementById('classic-theme-checkbox')?.checked || false;
+    await Store.set('legacy_classic_theme', isClassic);
+    applyTheme(isClassic);
     await saveInstancesToStore(); toggleOptions(false); fetchGitHubData(); updatePlayButtonText(); showToast("Settings Saved");
 }
 
@@ -1255,6 +1266,7 @@ async function saveProfile() {
         username = username.substring(0, 16);
     }
     await Store.set('legacy_username', username);
+    updateClassicUsername();
     toggleProfile(false); showToast("Profile Updated");
 }
 
@@ -1298,10 +1310,23 @@ function updateCompatDisplay() {
 }
 
 function toggleSidebar() {
-    const sidebar = document.querySelector('.sidebar'); const toggleIcon = document.getElementById('sidebar-toggle-icon');
-    sidebar.classList.toggle('collapsed');
-    if (sidebar.classList.contains('collapsed')) { toggleIcon.textContent = '▶'; toggleIcon.title = 'Expand Patch Notes'; }
-    else { toggleIcon.textContent = '◀'; toggleIcon.title = 'Collapse Patch Notes'; }
+    const sidebar = document.querySelector('.sidebar');
+    const toggleIcon = document.getElementById('sidebar-toggle-icon');
+    const list = document.getElementById('updates-list');
+
+    if (sidebar.classList.contains('collapsed')) {
+        list.style.display = 'flex';
+        requestAnimationFrame(() => {
+            sidebar.classList.remove('collapsed');
+            toggleIcon.textContent = '◀';
+            toggleIcon.title = 'Collapse Patch Notes';
+        });
+    } else {
+        list.style.display = '';
+        sidebar.classList.add('collapsed');
+        toggleIcon.textContent = '▶';
+        toggleIcon.title = 'Expand Patch Notes';
+    }
 }
 
 function isNewerVersion(latest, current) {
@@ -1383,6 +1408,61 @@ async function loadSplashText() {
         console.error("Failed to load splash text:", e);
         splashEl.textContent = "Welcome!";
     }
+    // Also sync classic splash text
+    const classicSplash = document.getElementById('classic-splash-text');
+    if (classicSplash && splashEl) classicSplash.textContent = splashEl.textContent;
+}
+
+// ============================================================
+// CLASSIC LAUNCHER THEME FUNCTIONS
+// ============================================================
+
+async function loadTheme() {
+    const isClassic = await Store.get('legacy_classic_theme', false);
+    const cb = document.getElementById('classic-theme-checkbox');
+    if (cb) cb.checked = isClassic;
+    applyTheme(isClassic);
+}
+
+function applyTheme(isClassic) {
+    document.body.classList.toggle('classic-theme', isClassic);
+    if (isClassic) {
+        syncClassicVersionSelect();
+        updateClassicUsername();
+    }
+}
+
+async function updateClassicUsername() {
+    const username = await Store.get('legacy_username', "Player");
+    const display = document.getElementById('classic-username-display');
+    const avatar = document.getElementById('classic-avatar');
+    if (display) display.textContent = username || "Player";
+    if (avatar) avatar.textContent = (username || "P")[0].toUpperCase();
+}
+
+function syncClassicVersionSelect() {
+    const mainSelect = document.getElementById('version-select');
+    const classicSelect = document.getElementById('classic-version-select');
+    const classicDisplay = document.getElementById('classic-version-display');
+    if (!mainSelect || !classicSelect) return;
+    // Copy options from main to classic
+    classicSelect.innerHTML = mainSelect.innerHTML;
+    classicSelect.selectedIndex = mainSelect.selectedIndex;
+    if (classicDisplay && classicSelect.selectedIndex >= 0) {
+        classicDisplay.textContent = classicSelect.options[classicSelect.selectedIndex]?.text || "Loading...";
+    }
+}
+
+function syncVersionFromClassic() {
+    const classicSelect = document.getElementById('classic-version-select');
+    const classicDisplay = document.getElementById('classic-version-display');
+    const mainSelect = document.getElementById('version-select');
+    if (!classicSelect || !mainSelect) return;
+    mainSelect.selectedIndex = classicSelect.selectedIndex;
+    if (classicDisplay && classicSelect.selectedIndex >= 0) {
+        classicDisplay.textContent = classicSelect.options[classicSelect.selectedIndex]?.text || "";
+    }
+    updateSelectedRelease();
 }
 
 async function toggleSnapshots(show, id = null) {
@@ -1565,6 +1645,7 @@ window.rollbackToSnapshot = rollbackToSnapshot;
 window.deleteSnapshot = deleteSnapshot;
 window.createSnapshotManual = createSnapshotManual;
 window.toggleSnapshots = toggleSnapshots;
+window.syncVersionFromClassic = syncVersionFromClassic;
 // Desktop shortcut for Linux AppImage
 function ensureDesktopShortcut() {
   if (typeof process === 'undefined' || process.platform !== 'linux') return;
