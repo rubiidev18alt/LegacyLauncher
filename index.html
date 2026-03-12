@@ -267,6 +267,15 @@
                 </label>
             </div>
 
+            <div class="mc-input-group">
+                <label class="mc-label">Controller Confirm/Cancel Layout:</label>
+                <select id="controller-layout-select" class="mc-input nav-item" tabindex="0" style="height: 48px; margin-top: 8px;">
+                    <option value="auto">Auto Detect (Recommended)</option>
+                    <option value="xbox">Xbox Style (A = Confirm, B = Cancel)</option>
+                    <option value="nintendo">Nintendo Style (B = Confirm, A = Cancel)</option>
+                </select>
+            </div>
+
             <div class="flex gap-4 w-full mt-4">
                 <div id="btn-options-done" class="btn-mc flex-grow nav-item" onclick="saveOptions()" tabindex="0">DONE</div>
                 <div id="btn-options-cancel" class="btn-mc flex-grow nav-item" onclick="toggleOptions(false)" tabindex="0">CANCEL</div>

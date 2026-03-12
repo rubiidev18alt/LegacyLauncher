@@ -45,6 +45,21 @@ const GamepadManager = {
     COOLDOWN: 180,
     loopStarted: false,
     lastAPressed: false,
+    lastGuidePressed: false,
+    controlLayoutMode: 'auto',
+
+    setControlLayoutMode(mode = 'auto') {
+        const validModes = ['auto', 'xbox', 'nintendo'];
+        this.controlLayoutMode = validModes.includes(mode) ? mode : 'auto';
+    },
+
+    shouldSwapABButtons(gamepadId = '') {
+        if (this.controlLayoutMode === 'nintendo') return true;
+        if (this.controlLayoutMode === 'xbox') return false;
+
+        const id = gamepadId.toLowerCase();
+        return id.includes('nintendo switch pro controller') || id.includes(' switch pro controller') || id.includes('nintendo co., ltd');
+    },
 
     init() {
         window.addEventListener("gamepadconnected", () => {
@@ -80,6 +95,7 @@ const GamepadManager = {
         }
 
         if (!gp) {
+            this.lastGuidePressed = false;
             if (this.active) {
                 this.active = false;
                 showToast("Controller Disconnected");
@@ -102,6 +118,18 @@ const GamepadManager = {
         const isPressed = (idx) => buttons[idx] ? buttons[idx].pressed : false;
         const getAxis = (idx) => axes[idx] !== undefined ? axes[idx] : 0;
 
+        const shouldSwapAB = this.shouldSwapABButtons(gp.id);
+        const confirmButton = shouldSwapAB ? 1 : 0;
+        const cancelButton = shouldSwapAB ? 0 : 1;
+
+        const guidePressed = isPressed(16) || isPressed(17);
+        if (guidePressed && !this.lastGuidePressed) {
+            showToast("Closing Launcher...");
+            ipcRenderer.send('window-close');
+            return;
+        }
+        this.lastGuidePressed = guidePressed;
+
         if (now - this.lastInputTime > this.COOLDOWN) {
             const threshold = 0.5;
             const axisX = getAxis(0);
@@ -120,12 +148,12 @@ const GamepadManager = {
             else if (isPressed(4)) { UiSoundManager.setInputSource('controller'); this.cycleActiveSelection(-1); this.lastInputTime = now; }
             else if (isPressed(5)) { UiSoundManager.setInputSource('controller'); this.cycleActiveSelection(1); this.lastInputTime = now; }
             
-            else if (isPressed(1)) { UiSoundManager.setInputSource('controller'); this.cancelCurrent(); this.lastInputTime = now; }
+            else if (isPressed(cancelButton)) { UiSoundManager.setInputSource('controller'); this.cancelCurrent(); this.lastInputTime = now; }
 
             else if (isPressed(2)) { UiSoundManager.setInputSource('controller'); checkForUpdatesManual(); this.lastInputTime = now; }
         }
 
-        const aPressed = isPressed(0);
+        const aPressed = isPressed(confirmButton);
         if (aPressed && !this.lastAPressed) {
             UiSoundManager.setInputSource('controller');
             this.clickActive();
@@ -600,6 +628,7 @@ window.onload = async () => {
         const portInput = document.getElementById('port-input');
         const serverCheck = document.getElementById('server-checkbox');
         const installInput = document.getElementById('install-path-input');
+        const controllerLayoutSelect = document.getElementById('controller-layout-select');
 
         if (repoInput) {
             repoInput.value = currentInstance.repo;
@@ -611,6 +640,7 @@ window.onload = async () => {
         if (portInput) portInput.value = currentInstance.port;
         if (serverCheck) serverCheck.checked = currentInstance.isServer;
         if (installInput) installInput.value = currentInstance.installPath;
+        if (controllerLayoutSelect) controllerLayoutSelect.value = await Store.get('legacy_controller_layout_mode', 'auto');
         syncRepoPresetFromInput();
         
         if (process.platform === 'linux' || process.platform === 'darwin') {
@@ -632,6 +662,7 @@ window.onload = async () => {
         // Initialize features
         await loadTheme();
         await loadSteamDeckMode();
+        await loadControllerLayoutMode();
         fetchGitHubData();
         checkForLauncherUpdates();
         loadSplashText();
@@ -1304,7 +1335,7 @@ function downloadFile(url, destPath) {
     });
 }
 
-function toggleOptions(show) {
+async function toggleOptions(show) {
     if (isProcessing) return;
     const modal = document.getElementById('options-modal');
     if (show) {
@@ -1313,6 +1344,12 @@ function toggleOptions(show) {
         if (cb) cb.checked = document.body.classList.contains('classic-theme');
         const steamDeckCb = document.getElementById('steamdeck-mode-checkbox');
         if (steamDeckCb) steamDeckCb.checked = document.body.classList.contains('steamdeck-mode');
+        const layoutSelect = document.getElementById('controller-layout-select');
+        if (layoutSelect) {
+            const savedLayoutMode = await Store.get('legacy_controller_layout_mode', 'auto');
+            layoutSelect.value = savedLayoutMode;
+            GamepadManager.setControlLayoutMode(savedLayoutMode);
+        }
         syncRepoPresetFromInput();
         document.activeElement?.blur(); modal.style.display = 'flex'; modal.style.opacity = '1';
         UiSoundManager.play('popupOpen');
@@ -1429,8 +1466,11 @@ async function saveOptions() {
     }
     const isClassic = document.getElementById('classic-theme-checkbox')?.checked || false;
     const isSteamDeckMode = document.getElementById('steamdeck-mode-checkbox')?.checked || false;
+    const controllerLayoutMode = document.getElementById('controller-layout-select')?.value || 'auto';
     await Store.set('legacy_classic_theme', isClassic);
     await Store.set('legacy_steamdeck_mode', isSteamDeckMode);
+    await Store.set('legacy_controller_layout_mode', controllerLayoutMode);
+    GamepadManager.setControlLayoutMode(controllerLayoutMode);
     applyTheme(isClassic);
     applySteamDeckMode(isSteamDeckMode);
     await saveInstancesToStore(); toggleOptions(false); fetchGitHubData(); updatePlayButtonText(); showToast("Settings Saved");
@@ -1670,6 +1710,13 @@ async function loadSteamDeckMode() {
     const cb = document.getElementById('steamdeck-mode-checkbox');
     if (cb) cb.checked = enabled;
     applySteamDeckMode(enabled);
+}
+
+async function loadControllerLayoutMode() {
+    const mode = await Store.get('legacy_controller_layout_mode', 'auto');
+    GamepadManager.setControlLayoutMode(mode);
+    const select = document.getElementById('controller-layout-select');
+    if (select) select.value = mode;
 }
 
 function applySteamDeckMode(enabled) {
