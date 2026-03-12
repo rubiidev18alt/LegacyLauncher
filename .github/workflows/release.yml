@@ -83,7 +83,7 @@ jobs:
           if-no-files-found: error
   build-mac-intel:
     name: Build macOS DMG (Intel)
-    runs-on: macos-13
+    runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -95,7 +95,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Build macOS DMG (Intel)
-        run: npm run dist:mac
+        run: npm run dist:mac -- --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload macOS Intel artifact
