@@ -9,6 +9,10 @@ const DEFAULT_REPO = "smartcmd/MinecraftConsoles";
 const DEFAULT_EXEC = "Minecraft.Client.exe";
 const TARGET_FILE = "LCEWindows64.zip";
 const LAUNCHER_REPO = "gradenGnostic/LegacyLauncher";
+const REPO_PRESETS = {
+    default: 'smartcmd/MinecraftConsoles',
+    noWatermark: 'cath0degaytube/MinecraftConsoles'
+};
 
 let instances = [];
 let currentInstanceId = null;
@@ -108,21 +112,22 @@ const GamepadManager = {
             const left = isPressed(14) || axisX < -threshold;
             const right = isPressed(15) || axisX > threshold;
 
-            if (up) { this.navigate('up'); this.lastInputTime = now; }
-            else if (down) { this.navigate('down'); this.lastInputTime = now; }
-            else if (left) { this.navigate('left'); this.lastInputTime = now; }
-            else if (right) { this.navigate('right'); this.lastInputTime = now; }
+            if (up) { UiSoundManager.setInputSource('controller'); this.navigate('up'); this.lastInputTime = now; }
+            else if (down) { UiSoundManager.setInputSource('controller'); this.navigate('down'); this.lastInputTime = now; }
+            else if (left) { UiSoundManager.setInputSource('controller'); this.navigate('left'); this.lastInputTime = now; }
+            else if (right) { UiSoundManager.setInputSource('controller'); this.navigate('right'); this.lastInputTime = now; }
             
-            else if (isPressed(4)) { this.cycleActiveSelection(-1); this.lastInputTime = now; }
-            else if (isPressed(5)) { this.cycleActiveSelection(1); this.lastInputTime = now; }
+            else if (isPressed(4)) { UiSoundManager.setInputSource('controller'); this.cycleActiveSelection(-1); this.lastInputTime = now; }
+            else if (isPressed(5)) { UiSoundManager.setInputSource('controller'); this.cycleActiveSelection(1); this.lastInputTime = now; }
             
-            else if (isPressed(1)) { this.cancelCurrent(); this.lastInputTime = now; }
+            else if (isPressed(1)) { UiSoundManager.setInputSource('controller'); this.cancelCurrent(); this.lastInputTime = now; }
 
-            else if (isPressed(2)) { checkForUpdatesManual(); this.lastInputTime = now; }
+            else if (isPressed(2)) { UiSoundManager.setInputSource('controller'); checkForUpdatesManual(); this.lastInputTime = now; }
         }
 
         const aPressed = isPressed(0);
         if (aPressed && !this.lastAPressed) {
+            UiSoundManager.setInputSource('controller');
             this.clickActive();
         }
         this.lastAPressed = aPressed;
@@ -218,7 +223,24 @@ const GamepadManager = {
         if (active && active.classList.contains('nav-item')) {
             active.classList.add('active-bump');
             setTimeout(() => active.classList.remove('active-bump'), 100);
-            
+
+            if (active.id === 'version-select-box') {
+                this.cycleActiveSelection(1);
+                return;
+            }
+            if (active.id === 'classic-version-select-box') {
+                const classicSelect = document.getElementById('classic-version-select');
+                if (classicSelect) {
+                    classicSelect.selectedIndex = (classicSelect.selectedIndex + 1) % classicSelect.options.length;
+                    syncVersionFromClassic();
+                }
+                return;
+            }
+            if (active.id === 'compat-select-box') {
+                this.cycleActiveSelection(1);
+                return;
+            }
+
             if (active.tagName === 'INPUT' && active.type === 'checkbox') {
                 active.checked = !active.checked;
                 active.dispatchEvent(new Event('change'));
@@ -313,12 +335,26 @@ const UiSoundManager = {
     lastPlayedAt: {},
     cooldownMs: 70,
     lastHoverItem: null,
+    inputSource: 'mouse',
+
+    setInputSource(source) {
+        this.inputSource = source;
+    },
+
+    shouldPlay() {
+        return this.inputSource === 'controller';
+    },
 
     init() {
         Object.entries(this.files).forEach(([key, file]) => {
             this.cache[key] = new Audio(file);
             this.cache[key].preload = 'auto';
             this.cache[key].volume = key === 'cursor' ? 0.45 : 0.6;
+        });
+
+        const markMouseInput = () => this.setInputSource('mouse');
+        ['mousemove', 'mousedown', 'touchstart', 'wheel', 'keydown'].forEach((ev) => {
+            document.addEventListener(ev, markMouseInput, { passive: true });
         });
 
         document.addEventListener('focusin', (e) => {
@@ -349,6 +385,7 @@ const UiSoundManager = {
     },
 
     play(name) {
+        if (!this.shouldPlay()) return;
         const now = Date.now();
         if (this.lastPlayedAt[name] && now - this.lastPlayedAt[name] < this.cooldownMs) return;
         this.lastPlayedAt[name] = now;
@@ -534,6 +571,24 @@ function focusPrimaryPlayButton() {
     setTimeout(() => target.classList.remove('controller-active'), 180);
 }
 
+function syncRepoPresetFromInput() {
+    const presetSelect = document.getElementById('repo-preset-select');
+    const repoInput = document.getElementById('repo-input');
+    if (!presetSelect || !repoInput) return;
+
+    if (repoInput.value.trim() === REPO_PRESETS.default) presetSelect.value = REPO_PRESETS.default;
+    else if (repoInput.value.trim() === REPO_PRESETS.noWatermark) presetSelect.value = REPO_PRESETS.noWatermark;
+    else presetSelect.value = 'custom';
+}
+
+function applyRepoPreset() {
+    const presetSelect = document.getElementById('repo-preset-select');
+    const repoInput = document.getElementById('repo-input');
+    if (!presetSelect || !repoInput) return;
+    if (presetSelect.value === 'custom') return;
+    repoInput.value = presetSelect.value;
+}
+
 window.onload = async () => {
     try {
         await migrateLegacyConfig();
@@ -546,13 +601,17 @@ window.onload = async () => {
         const serverCheck = document.getElementById('server-checkbox');
         const installInput = document.getElementById('install-path-input');
 
-        if (repoInput) repoInput.value = currentInstance.repo;
+        if (repoInput) {
+            repoInput.value = currentInstance.repo;
+            repoInput.addEventListener('input', syncRepoPresetFromInput);
+        }
         if (execInput) execInput.value = currentInstance.execPath;
         if (usernameInput) usernameInput.value = await Store.get('legacy_username', "");
         if (ipInput) ipInput.value = currentInstance.ip;
         if (portInput) portInput.value = currentInstance.port;
         if (serverCheck) serverCheck.checked = currentInstance.isServer;
         if (installInput) installInput.value = currentInstance.installPath;
+        syncRepoPresetFromInput();
         
         if (process.platform === 'linux' || process.platform === 'darwin') {
             const compatContainer = document.getElementById('compat-option-container');
@@ -572,6 +631,7 @@ window.onload = async () => {
 
         // Initialize features
         await loadTheme();
+        await loadSteamDeckMode();
         fetchGitHubData();
         checkForLauncherUpdates();
         loadSplashText();
@@ -731,6 +791,7 @@ async function switchInstance(id) {
     await saveInstancesToStore();
     
     document.getElementById('repo-input').value = currentInstance.repo;
+    syncRepoPresetFromInput();
     document.getElementById('exec-input').value = currentInstance.execPath;
     document.getElementById('ip-input').value = currentInstance.ip;
     document.getElementById('port-input').value = currentInstance.port;
@@ -1250,6 +1311,9 @@ function toggleOptions(show) {
         // Sync classic theme checkbox to current state
         const cb = document.getElementById('classic-theme-checkbox');
         if (cb) cb.checked = document.body.classList.contains('classic-theme');
+        const steamDeckCb = document.getElementById('steamdeck-mode-checkbox');
+        if (steamDeckCb) steamDeckCb.checked = document.body.classList.contains('steamdeck-mode');
+        syncRepoPresetFromInput();
         document.activeElement?.blur(); modal.style.display = 'flex'; modal.style.opacity = '1';
         UiSoundManager.play('popupOpen');
     }
@@ -1364,8 +1428,11 @@ async function saveOptions() {
         currentInstance.customCompatPath = customProtonPath;
     }
     const isClassic = document.getElementById('classic-theme-checkbox')?.checked || false;
+    const isSteamDeckMode = document.getElementById('steamdeck-mode-checkbox')?.checked || false;
     await Store.set('legacy_classic_theme', isClassic);
+    await Store.set('legacy_steamdeck_mode', isSteamDeckMode);
     applyTheme(isClassic);
+    applySteamDeckMode(isSteamDeckMode);
     await saveInstancesToStore(); toggleOptions(false); fetchGitHubData(); updatePlayButtonText(); showToast("Settings Saved");
 }
 
@@ -1596,6 +1663,19 @@ async function loadTheme() {
     applyTheme(isClassic);
 }
 
+async function loadSteamDeckMode() {
+    const autoSteamDeck = isSteamDeckEnvironment();
+    const saved = await Store.get('legacy_steamdeck_mode', null);
+    const enabled = saved === null ? autoSteamDeck : saved;
+    const cb = document.getElementById('steamdeck-mode-checkbox');
+    if (cb) cb.checked = enabled;
+    applySteamDeckMode(enabled);
+}
+
+function applySteamDeckMode(enabled) {
+    document.body.classList.toggle('steamdeck-mode', !!enabled);
+}
+
 function applyTheme(isClassic) {
     document.body.classList.toggle('classic-theme', isClassic);
     if (isClassic) {
@@ -1806,6 +1886,7 @@ window.checkForUpdatesManual = checkForUpdatesManual;
 window.browseInstallDir = browseInstallDir;
 window.openGameDir = openGameDir;
 window.toggleMusic = toggleMusic;
+window.applyRepoPreset = applyRepoPreset;
 window.getInstallDir = getInstallDir;
 window.showToast = showToast;
 window.toggleInstances = toggleInstances;

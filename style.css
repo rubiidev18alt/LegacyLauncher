@@ -94,6 +94,15 @@ body {
     background: #c42b1c;
 }
 
+
+.win-btn.nav-item:focus {
+    transform: scale(1.08);
+    z-index: 1001;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.95), 0 0 8px rgba(255,255,255,0.55) !important;
+    background: #444;
+    color: #fff;
+}
+
 .main-wrapper {
     display: flex;
     flex-grow: 1;
@@ -364,6 +373,11 @@ body {
     filter: brightness(1.08);
 }
 
+.nav-item:hover {
+    outline: 1px solid rgba(255,255,255,0.92) !important;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.85), 0 0 12px rgba(255, 255, 255, 0.52), 0 0 24px rgba(90, 170, 255, 0.22) !important;
+}
+
 .nav-item.active-bump {
     transform: scale(0.95) !important;
     transition: transform 0.1s !important;
@@ -400,6 +414,46 @@ body {
     margin-bottom: 36px;
     color: #fff;
     text-shadow: 2px 2px 0 #000;
+}
+
+/* Steam Deck optimized mode */
+body.steamdeck-mode .title-bar {
+    height: 40px;
+}
+
+body.steamdeck-mode .title-bar-text {
+    font-size: 18px;
+}
+
+body.steamdeck-mode .btn-mc {
+    min-height: 68px;
+    font-size: 28px;
+}
+
+body.steamdeck-mode .btn-play {
+    min-height: 110px;
+    font-size: 52px;
+}
+
+body.steamdeck-mode .version-select-box {
+    height: 64px;
+    font-size: 26px;
+}
+
+body.steamdeck-mode .mc-input,
+body.steamdeck-mode #repo-preset-select,
+body.steamdeck-mode .mc-label,
+body.steamdeck-mode .classic-link {
+    font-size: 20px !important;
+}
+
+body.steamdeck-mode .nav-item:focus {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.95), 0 0 22px rgba(255,255,255,0.7), 0 0 34px rgba(90,170,255,0.36) !important;
+}
+
+body.steamdeck-mode .sidebar {
+    width: 420px;
 }
 
 .version-row {
